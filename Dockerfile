@@ -4,7 +4,7 @@ ENV TZ Etc/UTC
 ENV FQDN localhost
 ENV SELFSIGNED 0
 
-RUN echo $TZ > /etc/timezone && apt-get update 
+RUN /etc/timezone && apt-get update 
 
 RUN apt-get install -y \
 apache2 \
