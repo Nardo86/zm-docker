@@ -1,6 +1,6 @@
 # ZONEMINDER
 
-This is a simple debian image with the ZoneMinder installed following the official "Debian 10 Buster with Zoneminder 1.34.x from the ZM Release-1.34 Repo" instructions.
+This is a simple debian image with the ZoneMinder installed following the official instructions https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.34.x_from_ZM_Repo.
 
 Because of the ssmtp deprecation the mail server installed is msmtp and a default configuration file prepared for GMail will be created in /config/msmtprc.
 

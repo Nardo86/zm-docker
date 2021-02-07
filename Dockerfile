@@ -1,10 +1,10 @@
 FROM debian:buster-slim
-#https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.34.x_from_ZM_Repo
+
 ENV TZ Etc/UTC
 ENV FQDN localhost
 ENV SELFSIGNED 0
 
-RUN /etc/timezone && apt-get update 
+RUN apt-get update 
 
 RUN apt-get install -y \
 apache2 \
