@@ -6,7 +6,7 @@ Because of the ssmtp deprecation the mail server installed is msmtp and a defaul
 
 Furthermore the image is prepared for working with SWAG(let's encrypt) image or there is an environment for the self-signed certificate option.
 
-Image available at https://hub.docker.com/r/nardo86/docker
+Image available at https://hub.docker.com/r/nardo86/zoneminder
 
 Feel free to consider donating if my work helped you! https://paypal.me/ErosNardi
 
