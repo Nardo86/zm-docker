@@ -13,7 +13,11 @@ sed -i -e 's,/var/lib/mysql,/config/mysql,g' /etc/mysql/mariadb.conf.d/50-server
 
 echo "Check MariaDB config"
 /etc/init.d/mysql start
-sleep 5
+while ! mysqladmin ping --silent; do
+	echo "Waiting mysql startup..."
+    sleep 3
+done
+
 RESULT=$(mysqlshow --user=zmuser --password=zmpass zm| grep -v Wildcard | grep -o Tables)
 if [ "$RESULT" != "Tables" ]; then
 
@@ -39,6 +43,10 @@ y
 EOF
 
 /etc/init.d/mysql restart
+while ! mysqladmin ping --silent; do
+	echo "Waiting mysql restart"
+    sleep 3
+done
 echo "Configuration done"
 else
 echo "MariaDB already configured"
@@ -50,6 +58,10 @@ if [ "$RESULT" = "" ]; then
 	echo "Set Mysql timezone"
 	printf  "[mysqld]\n  default-time-zone=$(cat /etc/timezone)" >> /etc/mysql/my.cnf
 	/etc/init.d/mysql restart
+	while ! mysqladmin ping --silent; do
+		echo "Waiting mysql restart..."
+		sleep 3
+	done
 fi
 
 RESULT=$(cat /etc/php/*/apache2/php.ini| grep "date.timezone =")
