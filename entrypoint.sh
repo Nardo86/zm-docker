@@ -5,7 +5,7 @@ echo "Configuring MariaDBPath"
 if [ ! -d /config/mysql ]; then
 	mkdir -p /config/mysql
 	rsync -a -v -q --ignore-existing /var/lib/mysql/ /config/mysql/
-	echo "Configuration done"
+	echo "MariaDBPath configuration done"
 else
 	echo "MariaDBPath already configured"
 fi
@@ -47,7 +47,7 @@ while ! mysqladmin ping --silent; do
 	echo "Waiting mysql restart"
     sleep 3
 done
-echo "Configuration done"
+echo "MariaDB configuration done"
 else
 echo "MariaDB already configured"
 fi

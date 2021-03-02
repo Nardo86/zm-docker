@@ -34,14 +34,13 @@ RUN a2enmod ssl \
 && a2enconf zoneminder \
 && a2ensite default-ssl.conf
 
-RUN  mkdir /config \
-&& sed -i -e 's,/var/lib/mysql,/config/mysql,g' /etc/mysql/mariadb.conf.d/50-server.cnf 
+RUN  mkdir /config
 
 COPY entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 
 VOLUME /config
 VOLUME /var/cache/zoneminder
+VOLUME /sslcert
 
 EXPOSE 443/tcp
-EXPOSE 9000/tcp

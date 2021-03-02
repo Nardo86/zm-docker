@@ -51,6 +51,8 @@ The shm-size will be the quantity of RAM dedicated to /dev/shm.*
 
 To access the Zoneminder gui, browse to: https://your.fqdn:443/zm
 
+**TIPS - RESTORE CONFIGURATION**
+
 If you need to transfer your data from another instance this method worked for me https://forums.zoneminder.com/viewtopic.php?t=17071:
 
 Backup the old DB
@@ -69,6 +71,15 @@ Init / cleanup
 
 `root@newSystem# zmaudit.pl`
 
+**TIPS - STUCK WITH Waiting mysql**
+
+If the mysql service fails to start for some problem the script will stay in an infinite loop waiting mysql xxxx..
+
+You can then log in to the machine and investigate for example starting the db with the command 
+
+`/usr/bin/mysqld_safe --skip-syslog`
+
+this will generate a detailed logfile of the startup possibly with some hints you can search to restore the db.
 
 **EXTRA OPTIONS**
 
