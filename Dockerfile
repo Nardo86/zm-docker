@@ -37,6 +37,7 @@ RUN a2enmod ssl \
 RUN  mkdir /config
 
 COPY entrypoint.sh /
+run chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 VOLUME /config
