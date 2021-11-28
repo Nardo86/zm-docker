@@ -1,5 +1,6 @@
 #!/bin/bash
-echo $TZ > /etc/timezone
+#echo $TZ > /etc/timezone
+ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 echo "Configuring MariaDBPath"
 if [ ! -d /config/mysql ]; then
@@ -54,7 +55,7 @@ fi
 
 echo "Checking Timezones"
 RESULT=$(cat /etc/mysql/my.cnf| grep default-time-zone)
-if [ "$RESULT" = "" ]; then
+if [ "$RESULT" != "default-time-zone=$(cat /etc/timezone)" ]; then
 	echo "Set Mysql timezone"
 	printf  "[mysqld]\n  default-time-zone=$(cat /etc/timezone)" >> /etc/mysql/my.cnf
 	/etc/init.d/mysql restart
@@ -65,9 +66,9 @@ if [ "$RESULT" = "" ]; then
 fi
 
 RESULT=$(cat /etc/php/*/apache2/php.ini| grep "date.timezone =")
-if [ "$RESULT" = ";date.timezone =" ]; then
+if [ "$RESULT" != "date.timezone = $(sed 's/\\/\//' /etc/timezone)" ]; then
 	echo "Set Php timezone"
-	sed -i "s/;date.timezone =/date.timezone = $(sed 's/\//\\\//' /etc/timezone)/g" /etc/php/*/apache2/php.ini
+	sed -i "s/;date.timezone =/date.timezone = $(sed 's/\\/\//' /etc/timezone)/g" /etc/php/*/apache2/php.ini
 fi
 
 echo "Checking MSMTP configuration"
@@ -92,7 +93,7 @@ ln -s /config/msmtprc /etc/msmtprc
 fi
 
 if [ "$SELFSIGNED" = "0" ]; then
-echo "Configuro collegamento a swag"
+echo "Linking to SWAG"
 sed -i -e 's,/etc/ssl/certs/ssl-cert-snakeoil.pem,/sslcert/live/'$FQDN'/cert.pem,g' /etc/apache2/sites-available/default-ssl.conf
 sed -i -e 's,/etc/ssl/private/ssl-cert-snakeoil.key,/sslcert/live/'$FQDN'/privkey.pem,g' /etc/apache2/sites-available/default-ssl.conf
 fi

@@ -17,15 +17,16 @@ RUN apt-get install -y \
 apt-transport-https \
 gnupg \
 wget \
-&& wget -O - https://zmrepo.zoneminder.com/debian/archive-keyring.gpg | apt-key add - \
-&& echo 'deb https://zmrepo.zoneminder.com/debian/release-1.34 buster/' >> /etc/apt/sources.list
+msmtp \
+msmtp-mta
+
+RUN wget -O - https://zmrepo.zoneminder.com/debian/archive-keyring.gpg | apt-key add - \
+&& echo 'deb https://zmrepo.zoneminder.com/debian/release-1.36 buster/' >> /etc/apt/sources.list
 
 RUN apt-get update 
 
 RUN apt-get install -y \
-zoneminder \
-msmtp \
-msmtp-mta
+zoneminder
 
 RUN adduser www-data video
 
@@ -37,7 +38,7 @@ RUN a2enmod ssl \
 RUN  mkdir /config
 
 COPY entrypoint.sh /
-run chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 VOLUME /config

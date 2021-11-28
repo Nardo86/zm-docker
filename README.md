@@ -43,9 +43,10 @@ Just run the image publishing the port and setting the ENV variables, the shm de
 
 `  nardo86/zoneminder`
 
-The SELFSIGNED flag will , the FQDN will be used for configuring Apache2 and, in case of using the SWAG certificate, find the correct folder and the /config folder will contain msmtp and mysql configuration.
+The FQDN will be used for configuring Apache2; the SELFSIGNED flag will generate a selfsigned certificate if needed else, in case of using the SWAG certificate, the system find the correct folder.
+The /config folder will contain msmtp and mysql configuration.
 
-The shm-size will be the quantity of RAM dedicated to /dev/shm.*
+The shm-size will be the quantity of RAM dedicated to /dev/shm, the size depends on the number and settings of the video sources to monitor, check ZoneMinder configuration for further information.*
 
 **be sure to not reserve too much RAM to this machine or the docker server wil start to paging and eventually becoming unresponsible**
 
