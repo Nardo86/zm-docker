@@ -11,6 +11,9 @@ else
 	echo "MariaDBPath already configured"
 fi
 sed -i -e 's,/var/lib/mysql,/config/mysql,g' /etc/mysql/mariadb.conf.d/50-server.cnf
+echo 'innodb_file_per_table = ON' >> /etc/mysql/mariadb.conf.d/50-server.cnf
+echo 'innodb_buffer_pool_size = 256M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
+echo 'innodb_log_file_size = 32M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 
 echo "Check MariaDB config"
 /etc/init.d/mysql start
@@ -53,17 +56,17 @@ else
 echo "MariaDB already configured"
 fi
 
-echo "Checking Timezones"
-RESULT=$(cat /etc/mysql/my.cnf| grep default-time-zone)
-if [ "$RESULT" != "default-time-zone=$(cat /etc/timezone)" ]; then
-	echo "Set Mysql timezone"
-	printf  "[mysqld]\n  default-time-zone=$(cat /etc/timezone)" >> /etc/mysql/my.cnf
-	/etc/init.d/mysql restart
-	while ! mysqladmin ping --silent; do
-		echo "Waiting mysql restart..."
-		sleep 3
-	done
-fi
+#echo "Checking Timezones"
+#RESULT=$(cat /etc/mysql/my.cnf| grep default-time-zone)
+#if [ "$RESULT" != "default-time-zone=$(cat /etc/timezone)" ]; then
+#	echo "Set Mysql timezone"
+#	printf  "[mysqld]\n  default-time-zone=$(cat /etc/timezone)" >> /etc/mysql/my.cnf
+#	/etc/init.d/mysql restart
+#	while ! mysqladmin ping --silent; do
+#		echo "Waiting mysql restart..."
+#		sleep 3
+#	done
+#fi
 
 RESULT=$(cat /etc/php/*/apache2/php.ini| grep "date.timezone =")
 if [ "$RESULT" != "date.timezone = $(sed 's/\\/\//' /etc/timezone)" ]; then
