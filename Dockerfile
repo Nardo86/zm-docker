@@ -1,4 +1,4 @@
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 ENV TZ Etc/UTC
 ENV FQDN localhost
@@ -21,7 +21,7 @@ msmtp \
 msmtp-mta
 
 RUN wget -O - https://zmrepo.zoneminder.com/debian/archive-keyring.gpg | apt-key add - \
-&& echo 'deb https://zmrepo.zoneminder.com/debian/release-1.36 buster/' >> /etc/apt/sources.list
+&& echo 'deb https://zmrepo.zoneminder.com/debian/release-1.36 bullseye/' >> /etc/apt/sources.list
 
 RUN apt-get update 
 
