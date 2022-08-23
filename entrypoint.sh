@@ -1,6 +1,25 @@
-#!/bin/bash
-#echo $TZ > /etc/timezone
+#!/usr/bin/env bash
+
+trap stop SIGTERM SIGINT SIGQUIT SIGHUP ERR
+
+start(){
+
 ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+dpkg-reconfigure --frontend noninteractive tzdata
+
+#install from package
+echo "Check ZoneMinder version"
+RESULT=$(dpkg -l | grep '^ii' | grep zoneminder |grep 1.36.24)
+if [ "$RESULT" == "" ]; then
+	echo "Installing new version"
+	dpkg -i /zoneminder_1.36.24~20220823.0-bullseye_arm64.deb
+	a2enmod ssl \
+	&& a2enmod rewrite \
+	&& a2enconf zoneminder \
+	&& a2ensite default-ssl.conf
+else
+	echo "Already up to date"
+fi
 
 echo "Configuring MariaDBPath"
 if [ ! -d /config/mysql ]; then
@@ -16,10 +35,10 @@ echo 'innodb_buffer_pool_size = 256M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 echo 'innodb_log_file_size = 32M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 
 echo "Check MariaDB config"
-/etc/init.d/mysql start
+/etc/init.d/mariadb start
 while ! mysqladmin ping --silent; do
 	echo "Waiting mysql startup..."
-    sleep 3
+	sleep 3
 done
 
 RESULT=$(mysqlshow --user=zmuser --password=zmpass zm| grep -v Wildcard | grep -o Tables)
@@ -51,9 +70,9 @@ while ! mysqladmin ping --silent; do
 	echo "Waiting mysql restart"
     sleep 3
 done
-echo "MariaDB configuration done"
+	echo "MariaDB configuration done"
 else
-echo "MariaDB already configured"
+	echo "MariaDB already configured"
 fi
 
 #echo "Checking Timezones"
@@ -69,9 +88,9 @@ fi
 #fi
 
 RESULT=$(cat /etc/php/*/apache2/php.ini| grep "date.timezone =")
-if [ "$RESULT" != "date.timezone = $(sed 's/\\/\//' /etc/timezone)" ]; then
+if [ "$RESULT" = ";date.timezone =" ]; then
 	echo "Set Php timezone"
-	sed -i "s/;date.timezone =/date.timezone = $(sed 's/\\/\//' /etc/timezone)/g" /etc/php/*/apache2/php.ini
+        printf  "date.timezone = $(cat /etc/timezone)" >> /etc/php/*/apache2/php.ini
 fi
 
 echo "Checking MSMTP configuration"
@@ -92,13 +111,13 @@ account default : gmail
 fi
 
 if [ ! -f /etc/msmtprc ]; then
-ln -s /config/msmtprc /etc/msmtprc
+	ln -s /config/msmtprc /etc/msmtprc
 fi
 
 if [ "$SELFSIGNED" = "0" ]; then
-echo "Linking to SWAG"
-sed -i -e 's,/etc/ssl/certs/ssl-cert-snakeoil.pem,/sslcert/live/'$FQDN'/cert.pem,g' /etc/apache2/sites-available/default-ssl.conf
-sed -i -e 's,/etc/ssl/private/ssl-cert-snakeoil.key,/sslcert/live/'$FQDN'/privkey.pem,g' /etc/apache2/sites-available/default-ssl.conf
+	echo "Linking to SWAG"
+	sed -i -e 's,/etc/ssl/certs/ssl-cert-snakeoil.pem,/sslcert/live/'$FQDN'/cert.pem,g' /etc/apache2/sites-available/default-ssl.conf
+	sed -i -e 's,/etc/ssl/private/ssl-cert-snakeoil.key,/sslcert/live/'$FQDN'/privkey.pem,g' /etc/apache2/sites-available/default-ssl.conf
 fi
 
 RESULT=$(cat /etc/apache2/apache2.conf| grep ServerName)
@@ -107,7 +126,7 @@ if [ "$RESULT" = "" ]; then
 	echo "ServerName "$FQDN >> /etc/apache2/apache2.conf
 fi
 
-echo "Seting /var/cache subfolders"
+echo "Setting /var/cache subfolders"
 mkdir -p /var/cache/zoneminder/cache && chown www-data:www-data /var/cache/zoneminder/cache
 mkdir -p /var/cache/zoneminder/events && chown www-data:www-data /var/cache/zoneminder/events
 mkdir -p /var/cache/zoneminder/images && chown www-data:www-data /var/cache/zoneminder/images
@@ -118,14 +137,35 @@ echo "Starting"
 /etc/init.d/apache2 start
 /usr/bin/zmpkg.pl start
 
-RESULT=$(tail -n1  /var/log/zm/zmpkg.log |grep "Version mismatch")
+RESULT=$(tail -n2  /var/log/zm/zmpkg.log |grep "Version mismatch")
 if [ "$RESULT" != "" ]; then
-echo "WARNING: DB version mismatch found!"
-echo "auto align.."
-/usr/bin/zmpkg.pl stop
-/usr/bin/zmupdate.pl -nointeractive
-/usr/bin/zmpkg.pl start
-echo "done"
+	echo "WARNING: DB version mismatch found!"
+	echo "auto align.."
+	/usr/bin/zmpkg.pl stop
+	/usr/bin/zmupdate.pl -nointeractive
+	/usr/bin/zmupdate.pl -f
+	/usr/bin/zmpkg.pl start
+	echo "done"
 fi
 
-tail -f /var/log/apache2/error.log
+tail -f /var/log/apache2/error.log & wait ${!}
+
+}
+
+stop(){
+
+echo "Shutdown requested"
+kill ${!};
+
+echo "Stopping apache"
+/etc/init.d/apache2 stop
+echo "Stopping zoneminder"
+/usr/bin/zmpkg.pl stop
+echo "Stopping mariadb"
+/etc/init.d/mariadb stop
+
+echo "Shutdown completed"
+exit
+}
+
+start
