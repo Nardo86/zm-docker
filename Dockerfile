@@ -60,7 +60,8 @@ libdata-entropy-perl \
 libvncclient1 \
 libjwt-gnutls0 \
 libgsoap-2.8.104 \
-tzdata
+tzdata \
+msmtp
 
 RUN adduser www-data video
 
