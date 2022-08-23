@@ -1,8 +1,9 @@
 # ZONEMINDER
 
-This is a simple debian image with the ZoneMinder installed following the official instructions https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.36.x_from_ZM_Repo.
+This is a simple debian image with the ZoneMinder installed following the official instructions https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.36.x_from_ZM_Repo; due to the fact that there is no official arm64 package it has been build directly from the sources https://zoneminder.readthedocs.io/en/stable/installationguide/packpack.html via 
+`OS=debian DIST=bullseye ARCH=aarch64 utils/packpack/startpackpack.sh`
 
-Because of the ssmtp deprecation the mail server installed is msmtp and a default configuration file prepared for GMail will be created in /config/msmtprc.
+Because of the ssmtp deprecation the mail server installed is msmtp and a default configuration file prepared for GMail will be created in /config/msmtprc, be sure to set the correct path /usr/bin/msmtp in zoneminder options.
 
 Furthermore the image is prepared for working with SWAG(let's encrypt) image or there is an environment for the self-signed certificate option.
 
@@ -10,7 +11,7 @@ Image available at https://hub.docker.com/r/nardo86/zoneminder
 
 Feel free to consider donating if my work helped you! https://paypal.me/ErosNardi
 
-_Tested on my Raspberry Pi 4 with SWAG_
+_Tested on my Raspberry Pi 4 with 64bit OS and SWAG_
 
 
 **USAGE**
