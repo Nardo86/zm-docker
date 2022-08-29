@@ -1,4 +1,4 @@
-# ZONEMINDER
+# ZONEMINDER - DOCKER ARM64
 
 This is a simple debian image with the ZoneMinder installed following the official instructions https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.36.x_from_ZM_Repo; due to the fact that there is no official arm64 package it has been build directly from the sources https://zoneminder.readthedocs.io/en/stable/installationguide/packpack.html via 
 `OS=debian DIST=bullseye ARCH=aarch64 utils/packpack/startpackpack.sh`
