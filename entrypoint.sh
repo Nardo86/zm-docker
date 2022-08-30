@@ -150,6 +150,8 @@ if [ "$RESULT" != "" ]; then
 	echo "done"
 fi
 
+mysql -e "update zm.Config set Value = '$TZ' where Name = 'ZM_TIMEZONE';"
+
 tail -f /var/log/apache2/error.log & wait ${!}
 
 }
