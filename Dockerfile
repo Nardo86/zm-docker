@@ -60,8 +60,15 @@ libdata-entropy-perl \
 libvncclient1 \
 libjwt-gnutls0 \
 libgsoap-2.8.104 \
-tzdata \
-msmtp
+tzdata
+
+RUN apt-get remove -y \
+exim4* \
+&& apt autoremove
+
+RUN apt-get install -y \
+msmtp \
+msmtp-mta
 
 RUN adduser www-data video
 
