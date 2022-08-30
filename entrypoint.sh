@@ -15,6 +15,8 @@ if [ "$RESULT" == "" ]; then
 	dpkg -i /zoneminder_1.36.24~20220823.0-bullseye_arm64.deb
 	a2enmod ssl \
 	&& a2enmod rewrite \
+	&& a2enmod headers \
+	&& a2enmod expires \
 	&& a2enconf zoneminder \
 	&& a2ensite default-ssl.conf
 else
