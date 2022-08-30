@@ -64,7 +64,7 @@ tzdata
 
 RUN apt-get remove -y \
 exim4* \
-&& apt autoremove
+&& apt autoremove -y
 
 RUN apt-get install -y \
 msmtp \
