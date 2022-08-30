@@ -65,7 +65,7 @@ y
 y
 EOF
 
-/etc/init.d/mysql restart
+/etc/init.d/mariadb restart
 while ! mysqladmin ping --silent; do
 	echo "Waiting mysql restart"
     sleep 3
