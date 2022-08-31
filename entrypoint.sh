@@ -9,10 +9,10 @@ dpkg-reconfigure --frontend noninteractive tzdata
 
 #install from package
 echo "Check ZoneMinder version"
-RESULT=$(dpkg -l | grep '^ii' | grep zoneminder |grep 1.36.24)
+RESULT=$(dpkg -l | grep '^ii' | grep zoneminder |grep 1.36.25)
 if [ "$RESULT" == "" ]; then
 	echo "Installing new version"
-	dpkg -i /zoneminder_1.36.24~20220823.0-bullseye_arm64.deb
+	dpkg -i /zoneminder_1.36.25~20220831.9-bullseye_arm64.deb
 	a2enmod ssl \
 	&& a2enmod rewrite \
 	&& a2enmod headers \
