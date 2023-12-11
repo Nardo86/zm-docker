@@ -1,2 +1,7 @@
 build_run.sh
 publish.sh
+deb_pack.txt
+build.sh
+.Dockerfile.swp
+.gitignore
+publish.txt
