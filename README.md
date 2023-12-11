@@ -17,45 +17,42 @@ _Tested on my MiniPC Intel x64 and SWAG_
 
 Just run the image publishing the port and setting the ENV variables, the shm dedicated and mounting the folder you wish to map.
 
-`docker run -d \`
-`  --name=zoneMinder \`
-`  -p 443:443 \`
-`  -e TZ=Europe/Rome \`
-`  -e SELFSIGNED=0 \`
-`  -e FQDN=your.fqdn \`
-`  --shm-size=1g \`
-`  -v /mystorage/ZoneMinder/config:/config \`
-`  -v /mystorage/ZoneMinder/zmcache:/var/cache/zoneminder \`
-`  -v /mystorage/Swag/etc/letsencrypt/live:/sslcert/live \`
-`  -v /mystorage/Swag/etc/letsencrypt/archive:/sslcert/archive \`
-`  --restart unless-stopped \`
-`  nardo86/zoneminder`
+```
+docker run -d \
+  --name=zoneMinder \
+  -p 443:443 \
+  -e TZ=Europe/Rome \
+  -e SELFSIGNED=0 \
+  -e FQDN=your.fqdn \
+  --shm-size=1g \
+  -v /mystorage/ZoneMinder/config:/config \
+  -v /mystorage/ZoneMinder/zmcache:/var/cache/zoneminder \
+  -v /mystorage/Swag/etc/letsencrypt/live:/sslcert/live \
+  -v /mystorage/Swag/etc/letsencrypt/archive:/sslcert/archive \
+  --restart unless-stopped \
+  nardo86/zoneminder
+```
 
 Or add to your docker compose
 
-`zoneminder:`
-`    image: nardo86/zoneminder`
-`    container_name: zoneminder`
-`    ports:`
-`    - "443:443"`
-`    environment:`
-`    - "TZ=Europe/Rome"`
-`    - "SELFSIGNED=0"`
-`    - "FQDN=your.fqdn"`
-`    volumes:`
-`    - "/mystorage/ZoneMinder/config:/config"`
-`    - "/mystorage/ZoneMinder/zmcache:/var/cache/zoneminder"`
-`    - "/mystorage/Swag/etc/letsencrypt/live:/sslcert/live"`
-`    - "/mystorage/Swag/etc/letsencrypt/archive:/sslcert/archive"`
-`    shm_size: '1gb'`
-`    deploy:`
-`      resources:`
-`        limits:`
-`          cpus: '2'`
-`        reservations:`
-`          cpus: '0.1'`
-`          memory: 50M`
-`    restart: unless-stopped`
+```
+zoneminder:
+    image: nardo86/zoneminder
+    container_name: zoneminder
+    ports:
+    - "443:443"
+    environment:
+    - "TZ=Europe/Rome"
+    - "SELFSIGNED=0"
+    - "FQDN=your.fqdn"
+    volumes:
+    - "/mystorage/ZoneMinder/config:/config"
+    - "/mystorage/ZoneMinder/zmcache:/var/cache/zoneminder"
+    - "/mystorage/Swag/etc/letsencrypt/live:/sslcert/live"
+    - "/mystorage/Swag/etc/letsencrypt/archive:/sslcert/archive"
+    shm_size: '1gb'
+    restart: unless-stopped
+```
 
 The FQDN will be used for configuring Apache2; the SELFSIGNED flag will generate a selfsigned certificate if needed else, in case of using the SWAG certificate, the system find the correct folder.
 The /config folder will contain msmtp and mysql configuration.
