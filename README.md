@@ -1,4 +1,10 @@
-# ZONEMINDER - DOCKER ARM64
+# ZONEMINDER - DOCKER ARM64 AMD64
+
+## DISCONTINUED
+## Since I am no longer using ZoneMinder, versions after 1.36.33 will no longer be tested, use them at your own risk and make backups before upgrading.
+## The command to compile the ARM64 version no longer works so I will continue to maintain ZoneMinder version 1.36.33.
+
+----------------------------
 
 This is a simple debian image with the ZoneMinder installed following the official instructions https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.36.x_from_ZM_Repo; due to the fact that there is no official arm64 package it has been build directly from the sources https://zoneminder.readthedocs.io/en/stable/installationguide/packpack.html via `OS=debian DIST=bullseye ARCH=aarch64 utils/packpack/startpackpack.sh`
 
@@ -9,8 +15,6 @@ Furthermore the image is prepared for working with [SWAG from LinuxServer.io](ht
 Image available at https://hub.docker.com/r/nardo86/zoneminder
 
 Feel free to consider donating if my work helped you! https://paypal.me/ErosNardi
-
-_Tested on my MiniPC Intel x64 and SWAG_
 
 
 **USAGE**

@@ -74,7 +74,7 @@ RUN adduser www-data video
 
 RUN  mkdir /config
 
-COPY zoneminder_1.36.33~20230228.55-bullseye_amd64.deb /
+COPY zoneminder_1.36.35~20241030.27-bullseye_amd64.deb /
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
