@@ -17,6 +17,10 @@ if [ ! -d /config/mysql ]; then
 else
 	echo "MariaDBPath already configured"
 fi
+
+# Ensure correct permissions for mysql data directory
+echo "Fixing MySQL permissions"
+chown -R mysql:mysql /config/mysql/
 sed -i -e 's,/var/lib/mysql,/config/mysql,g' /etc/mysql/mariadb.conf.d/50-server.cnf
 echo 'innodb_file_per_table = ON' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 echo 'innodb_buffer_pool_size = 256M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
