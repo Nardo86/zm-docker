@@ -98,27 +98,6 @@ if [ ! -f /etc/msmtprc ]; then
 	ln -s /config/msmtprc /etc/msmtprc
 fi
 
-echo "Check ZM config"
-if [ ! -f /config/zm_extra.conf ]; then
-
-echo "Creating /config/zm_extra.conf"
-cat > /config/zm_extra.conf << EOF
-# Custom ZoneMinder configuration
-ZM_DB_HOST=localhost
-ZM_DB_NAME=zm
-ZM_DB_USER=zmuser
-ZM_DB_PASS=zmpass
-ZM_LOG_LEVEL_SYSLOG=3
-ZM_LOG_LEVEL_FILE=3
-ZM_LOG_LEVEL_WEBLOG=3
-EOF
-
-ln -sf /config/zm_extra.conf /etc/zm/conf.d/90-zm_extra.conf
-
-else
-	echo "ZM configuration already exists"
-fi
-
 echo "Check SSL Certificates"
 if [ "$SELFSIGNED" = "1" ]; then
     echo "Generating self-signed certificate"
