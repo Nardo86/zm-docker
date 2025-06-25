@@ -26,28 +26,33 @@ echo 'innodb_file_per_table = ON' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 echo 'innodb_buffer_pool_size = 256M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 echo 'innodb_log_file_size = 32M' >> /etc/mysql/mariadb.conf.d/50-server.cnf
 
-echo "Check MariaDB config"
+echo "Starting MariaDB..."
 /etc/init.d/mariadb start
 while ! mysqladmin ping --silent; do
-	echo "Waiting mysql startup..."
+	echo "Waiting for MariaDB startup..."
 	sleep 3
 done
+echo "MariaDB started successfully"
 
-RESULT=$(mysqlshow --user=zmuser --password=zmpass zm| grep -v Wildcard | grep -o Tables)
+echo "Checking ZoneMinder database configuration..."
+RESULT=$(mysqlshow --user=zmuser --password=zmpass zm 2>/dev/null | grep -v Wildcard | grep -o Tables)
 if [ "$RESULT" != "Tables" ]; then
+	echo "ZoneMinder database not found - performing initial setup..."
+	echo "This may take a few minutes, please wait..."
 
-#configure mysql
-echo "USE mysql;" > timezones.sql &&  mysql_tzinfo_to_sql /usr/share/zoneinfo >> timezones.sql
-mysql -u root < timezones.sql
-rm timezones.sql
+	echo "Step 1/5: Configuring timezones..."
+	echo "USE mysql;" > timezones.sql &&  mysql_tzinfo_to_sql /usr/share/zoneinfo >> timezones.sql
+	mysql -u root < timezones.sql 2>/dev/null
+	rm timezones.sql
 
-mysql -u root < /usr/share/zoneminder/db/zm_create.sql
-mysql -u root -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';"
-mysqladmin -u root reload
+	echo "Step 2/5: Creating ZoneMinder database..."
+	mysql -u root < /usr/share/zoneminder/db/zm_create.sql 2>/dev/null
+	mysql -u root -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" 2>/dev/null
+	mysqladmin -u root reload 2>/dev/null
 
-#secure mysql
-secret=$(openssl rand -base64 14)
-mysql_secure_installation <<EOF
+	echo "Step 3/5: Securing MariaDB installation..."
+	secret=$(openssl rand -base64 14)
+	mysql_secure_installation <<EOF >/dev/null 2>&1
 
 y
 $secret
@@ -58,15 +63,18 @@ y
 y
 EOF
 
-/etc/init.d/mariadb restart
-while ! mysqladmin ping --silent; do
-	echo "Waiting mysql restart"
-    sleep 3
-done
-	echo "MariaDB configuration done"
+	echo "Step 4/5: Restarting MariaDB..."
+	/etc/init.d/mariadb restart >/dev/null 2>&1
+	while ! mysqladmin ping --silent; do
+		echo "Waiting for MariaDB restart..."
+		sleep 3
+	done
+
+	echo "Step 5/5: Finalizing database setup..."
+	echo "ZoneMinder database configuration completed successfully!"
 
 else
-echo "ZM Database already configured"
+	echo "ZoneMinder database already configured - skipping setup"
 fi
 
 echo "Check MSMTP config"

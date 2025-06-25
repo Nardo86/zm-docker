@@ -6,6 +6,9 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "main", "master" ]
+  schedule:
+    # Run automatically on the 1st of every month at 02:00 UTC
+    - cron: '0 2 1 * *'
   workflow_dispatch:
     inputs:
       zm_version:
@@ -43,8 +46,20 @@ jobs:
         id: get-version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual build triggered - using specified version"
             echo "version=${{ github.event.inputs.zm_version }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Scheduled monthly build triggered - fetching latest version"
+            # Get latest ZoneMinder version from GitHub API (note: repo name is case sensitive!)
+            VERSION=$(curl -s https://api.github.com/repos/ZoneMinder/zoneminder/releases/latest | jq -r '.tag_name')
+            echo "Fetched version from API: $VERSION"
+            if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
+              echo "API failed, using fallback version"
+              VERSION="1.36.35"
+            fi
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
           else
+            echo "Push/PR build triggered - fetching latest version"
             # Get latest ZoneMinder version from GitHub API (note: repo name is case sensitive!)
             VERSION=$(curl -s https://api.github.com/repos/ZoneMinder/zoneminder/releases/latest | jq -r '.tag_name')
             echo "Fetched version from API: $VERSION"
