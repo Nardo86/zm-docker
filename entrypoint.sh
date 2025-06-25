@@ -37,18 +37,29 @@ echo "USE mysql;" > timezones.sql &&  mysql_tzinfo_to_sql /usr/share/zoneinfo >>
 mysql -u root < timezones.sql
 rm timezones.sql
 
-mysql -u root <<-EOSQL
-UPDATE mysql.user SET Password=PASSWORD('root') WHERE User='root';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.db WHERE Db='test' OR Db='test_%';
-CREATE USER 'zmuser'@localhost IDENTIFIED BY 'zmpass';
-GRANT ALL PRIVILEGES ON zm.* TO 'zmuser'@localhost;
-FLUSH PRIVILEGES;
-EOSQL
+mysql -u root < /usr/share/zoneminder/db/zm_create.sql
+mysql -u root -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';"
+mysqladmin -u root reload
 
-echo 'Initializing ZM DB'
-sudo -u www-data /usr/bin/zmpkg.pl version
+#secure mysql
+secret=$(openssl rand -base64 14)
+mysql_secure_installation <<EOF
+
+y
+$secret
+$secret
+y
+y
+y
+y
+EOF
+
+/etc/init.d/mariadb restart
+while ! mysqladmin ping --silent; do
+	echo "Waiting mysql restart"
+    sleep 3
+done
+	echo "MariaDB configuration done"
 
 else
 echo "ZM Database already configured"
@@ -80,6 +91,11 @@ chmod 600 /config/msmtprc
 
 else
 	echo "MSMTP already configured"
+fi
+
+# Link msmtp config if not exists
+if [ ! -f /etc/msmtprc ]; then
+	ln -s /config/msmtprc /etc/msmtprc
 fi
 
 echo "Check ZM config"
@@ -125,12 +141,44 @@ else
 fi
 
 # Configure Apache ServerName
-sed -i "s/#ServerName.*/ServerName $FQDN/" /etc/apache2/sites-available/default-ssl.conf
+RESULT=$(cat /etc/apache2/apache2.conf| grep ServerName)
+if [ "$RESULT" = "" ]; then
+	echo "Set ServerName"
+	echo "ServerName "$FQDN >> /etc/apache2/apache2.conf
+fi
+
+# Configure PHP timezone
+RESULT=$(cat /etc/php/*/apache2/php.ini| grep "date.timezone =")
+if [ "$RESULT" = ";date.timezone =" ]; then
+	echo "Set Php timezone"
+        printf  "date.timezone = $(cat /etc/timezone)" >> /etc/php/*/apache2/php.ini
+fi
+
+echo "Setting /var/cache subfolders"
+mkdir -p /var/cache/zoneminder/cache && chown www-data:www-data /var/cache/zoneminder/cache
+mkdir -p /var/cache/zoneminder/events && chown www-data:www-data /var/cache/zoneminder/events
+mkdir -p /var/cache/zoneminder/images && chown www-data:www-data /var/cache/zoneminder/images
+mkdir -p /var/cache/zoneminder/temp && chown www-data:www-data /var/cache/zoneminder/temp
 
 echo "Starting services"
 service rsyslog start
-/etc/init.d/mariadb start
 /etc/init.d/apache2 start
+/usr/bin/zmpkg.pl start
+
+# Check for version mismatch and auto-update if needed
+RESULT=$(tail -n2  /var/log/zm/zmpkg.log |grep "Version mismatch")
+if [ "$RESULT" != "" ]; then
+	echo "WARNING: DB version mismatch found!"
+	echo "auto align.."
+	/usr/bin/zmpkg.pl stop
+	/usr/bin/zmupdate.pl -nointeractive
+	/usr/bin/zmupdate.pl -f
+	/usr/bin/zmpkg.pl start
+	echo "done"
+fi
+
+# Set timezone in ZoneMinder config
+mysql -e "update zm.Config set Value = '$TZ' where Name = 'ZM_TIMEZONE';"
 
 echo "ZoneMinder configured and started"
 echo "Access via: https://$FQDN:443/zm"
@@ -138,18 +186,20 @@ echo "Access via: https://$FQDN:443/zm"
 }
 
 stop(){
-	echo "Shutting down"
+	echo "Shutdown requested"
+	kill ${!};
+
+	echo "Stopping apache"
 	/etc/init.d/apache2 stop
+	echo "Stopping zoneminder"
+	/usr/bin/zmpkg.pl stop
+	echo "Stopping mariadb"
 	/etc/init.d/mariadb stop
-	service rsyslog stop
-	exit 0
+
+	echo "Shutdown completed"
+	exit
 }
 
 start
 
-while :
-do
-	echo "Ready to accept connections at https://$FQDN:443/zm"
-	sleep 30 &
-	wait $!
-done
+tail -f /var/log/apache2/error.log & wait ${!}

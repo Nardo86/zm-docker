@@ -6,12 +6,12 @@ A containerized ZoneMinder surveillance system built on Debian Bullseye, providi
 
 This project is **community-maintained** and no longer actively used by the original author. While functional, please note:
 
-- **AMD64 builds**: Available with ZoneMinder 1.36.35 (latest tested version)
-- **ARM64 builds**: Currently limited to ZoneMinder 1.36.33 due to build infrastructure constraints
+- **AMD64 builds**: Available with latest ZoneMinder versions
+- **ARM64 builds**: Fully supported via automated builds
 - **Testing**: Limited testing is performed on new versions - use at your own risk
 - **Support**: Community-based support only
 
-**⚠️ Disclaimer**: Always backup your configuration and recordings before upgrading versions.
+**⚠️ Important**: Always backup your configuration and recordings before upgrading versions.
 
 ## Features
 
@@ -70,12 +70,6 @@ This container is built following the [official ZoneMinder installation guide](h
 ## Image Repository
 
 Available at: https://hub.docker.com/r/nardo86/zoneminder
-
-## Support the Project
-
-Feel free to consider donating if this project helped you! https://paypal.me/ErosNardi
-
-⚠️ **Disclaimer**: This project was developed with the assistance of Claude AI (Anthropic).
 
 
 ## Configuration
@@ -199,41 +193,40 @@ This is a community-maintained project. Contributions are welcome:
 - 📚 **Documentation**: Help improve this README
 - 🧪 **Testing**: Help test new versions on different architectures
 
-## Automated Builds
+## ⚠️ AI Disclaimer
 
-This repository now features **automated builds** using GitHub Actions:
+This project was developed with the assistance of Claude AI (Anthropic). While functional, please be aware that:
 
-- 🔄 **Automatic Updates**: Builds latest ZoneMinder releases automatically
-- 🏗️ **Multi-Architecture**: Supports both AMD64 and ARM64 via GitHub runners
-- 🚀 **Continuous Integration**: Builds on every push and can be manually triggered
-- 📦 **Docker Hub Integration**: Automatically pushes to Docker Hub with proper tagging
+- **Security considerations**: The configuration may not be optimized for production environments
+- **Best practices**: Some settings might not follow enterprise-grade security standards  
+- **Testing required**: Thoroughly test in your environment before production use
+- **No warranty**: Use at your own risk - review all configurations before deployment
+- **Community input welcome**: Issues and improvements are encouraged via GitHub issues/PRs
 
-### Build Process
+**Recommendation**: Have a security professional review the setup before production deployment.
 
-1. **Package Building**: ZoneMinder is compiled from source for both architectures
-2. **Docker Build**: Multi-arch Docker images are built using the compiled packages
-3. **Automated Publishing**: Images are pushed to Docker Hub with version tags
+## Support & Donations
 
-### Version Information
+This is a community project maintained on a volunteer basis. 
+
+**If this project helped you:**
+- ⭐ Star the repository on GitHub
+- 🐛 Report issues and bugs
+- 🔧 Contribute improvements
+- ☕ Feel free to consider donating if my work helped you! https://paypal.me/ErosNardi
+
+**For issues:**
+1. Check existing GitHub issues
+2. Review security considerations
+3. Test in isolated environment
+4. Provide detailed reproduction steps
+5. Be patient - this is maintained on volunteer basis
+
+## Version Information
 
 - **AMD64**: Latest ZoneMinder version (automatically updated)
-- **ARM64**: Latest ZoneMinder version (now possible via GitHub Actions)
+- **ARM64**: Latest ZoneMinder version (fully supported)
 - **Base Image**: Debian Bullseye Slim
 - **Web Server**: Apache2 with SSL
 - **Database**: MariaDB
 - **Mail**: msmtp (replaces deprecated ssmtp)
-
-### Manual Package Building
-
-For local development, use the provided build script:
-
-```bash
-# Build latest version for AMD64 only
-./build-packages.sh
-
-# Build with ARM64 support (requires QEMU)
-BUILD_ARM64=true ./build-packages.sh
-
-# Build specific version
-ZM_VERSION=1.36.35 ./build-packages.sh
-```
