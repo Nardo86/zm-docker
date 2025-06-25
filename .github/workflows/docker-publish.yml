@@ -37,7 +37,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake git devscripts equivs
+          sudo apt-get install -y build-essential cmake git devscripts equivs jq
 
       - name: Get ZoneMinder version
         id: get-version
@@ -45,8 +45,13 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.zm_version }}" >> $GITHUB_OUTPUT
           else
-            # Get latest ZoneMinder version from GitHub API
-            VERSION=$(curl -s https://api.github.com/repos/ZoneMinder/ZoneMinder/releases/latest | jq -r '.tag_name')
+            # Get latest ZoneMinder version from GitHub API (note: repo name is case sensitive!)
+            VERSION=$(curl -s https://api.github.com/repos/ZoneMinder/zoneminder/releases/latest | jq -r '.tag_name')
+            echo "Fetched version from API: $VERSION"
+            if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
+              echo "API failed, using fallback version"
+              VERSION="1.36.35"
+            fi
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
           fi
 
