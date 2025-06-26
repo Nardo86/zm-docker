@@ -40,7 +40,7 @@ if [ "$RESULT" != "Tables" ]; then
 	echo "ZoneMinder database not found - performing initial setup..."
 	echo "This may take a few minutes, please wait..."
 
-	echo "Step 1/5: Configuring timezones..."
+	echo "Step 1/5: Initializing database..."
 	echo "USE mysql;" > timezones.sql &&  mysql_tzinfo_to_sql /usr/share/zoneinfo >> timezones.sql
 	mysql -u root < timezones.sql 2>/dev/null
 	rm timezones.sql
