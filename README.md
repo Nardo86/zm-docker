@@ -1,232 +1,136 @@
 # ZoneMinder Docker Container
 
-A containerized ZoneMinder surveillance system built on Debian Bullseye, providing a complete video surveillance solution with web interface, database, and SSL support.
+Containerized [ZoneMinder](https://zoneminder.com/) on Debian, built from
+upstream source using the official Debian packaging path. Multi-arch:
+`linux/amd64`, `linux/arm64`. Tested on Raspberry Pi 4 (64-bit OS).
 
-## ⚠️ Project Status
+> **Status:** community-maintained, no active testing by the original author.
+> Functional and stable for personal use. Issues and PRs welcome.
 
-This project is **community-maintained** and no longer actively used by the original author. While functional, please note:
+## Why this image
 
-- **AMD64 builds**: Available with latest ZoneMinder versions
-- **ARM64 builds**: Fully supported via automated builds
-- **Testing**: Limited testing is performed on new versions - use at your own risk
-- **Support**: Community-based support only
-
-**⚠️ Important**: Always backup your configuration and recordings before upgrading versions.
-
-## Features
-
-- 🔒 **SSL/TLS Support** - Self-signed certificates or custom SSL certificates
-- 🗄️ **Persistent Storage** - Configuration and recordings stored in mounted volumes
-- 📧 **Email Notifications** - Integrated msmtp for email alerts
-- 🔧 **Easy Configuration** - Environment variable based setup
-- 🌐 **Multi-Architecture** - Support for both AMD64 and ARM64 platforms
-- 🔗 **SWAG Integration** - Compatible with LinuxServer.io SWAG reverse proxy
+- ZoneMinder's official image hasn't been updated in years.
+- Other popular images (e.g. dlandon's) bundle Event Notification Server and
+  ML add-ons. This image stays focused: just ZoneMinder.
+- Built on Debian bookworm, the same base as current Raspberry Pi OS 64-bit.
 
 ## Quick Start
 
-### Docker Run
-```bash
-docker run -d \
-  --name=zoneMinder \
-  -p 443:443 \
-  -e TZ=Europe/Rome \
-  -e SELFSIGNED=0 \
-  -e FQDN=your.fqdn \
-  --shm-size=1g \
-  -v /mystorage/ZoneMinder/config:/config \
-  -v /mystorage/ZoneMinder/zmcache:/var/cache/zoneminder \
-  --restart unless-stopped \
-  nardo86/zoneminder
-```
-
-### Docker Compose
 ```yaml
-version: '3.8'
 services:
   zoneminder:
-    image: nardo86/zoneminder
+    image: nardo86/zoneminder:latest
     container_name: zoneminder
     ports:
       - "443:443"
     environment:
-      - TZ=Europe/Rome
-      - SELFSIGNED=0
-      - FQDN=your.fqdn
+      TZ: Europe/Rome
+      FQDN: zm.example.local
+      SELFSIGNED: "1"
     volumes:
-      - /mystorage/ZoneMinder/config:/config
-      - /mystorage/ZoneMinder/zmcache:/var/cache/zoneminder
-    shm_size: '1gb'
+      - ./config:/config                       # MariaDB data + msmtp config
+      - ./zmcache:/var/cache/zoneminder        # events + recordings
+    shm_size: 1gb
     restart: unless-stopped
 ```
 
-## Technical Details
-
-This container is built following the [official ZoneMinder installation guide](https://wiki.zoneminder.com/Debian_10_Buster_with_Zoneminder_1.36.x_from_ZM_Repo). 
-
-**ARM64 builds** are compiled from source using the official build process due to lack of pre-built ARM64 packages.
-
-**Email Configuration**: Uses msmtp (replacing deprecated ssmtp) with Gmail-ready configuration template created at `/config/msmtprc`.
-
-## Image Repository
-
-Available at: https://hub.docker.com/r/nardo86/zoneminder
-
+Access at `https://<FQDN>:443/zm` once the container reports `healthy`.
 
 ## Configuration
 
-### Environment Variables
+| Variable     | Description                                              | Default     |
+|--------------|----------------------------------------------------------|-------------|
+| `TZ`         | Timezone (also written to ZM's `ZM_TIMEZONE`)            | `Etc/UTC`   |
+| `FQDN`       | Server hostname for Apache `ServerName` and SSL          | `localhost` |
+| `SELFSIGNED` | `1` → generate a self-signed cert on first run, `0` → expect certs under `/sslcert/live/$FQDN/` | `0` |
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TZ` | Timezone setting | `Etc/UTC` |
-| `FQDN` | Fully Qualified Domain Name for Apache2 configuration | `localhost` |
-| `SELFSIGNED` | Use self-signed certificates (1) or custom SSL certificates (0) | `0` |
+### Shared memory
 
-### SSL Certificate Options
+ZoneMinder uses `/dev/shm` for live capture buffers. Start with `shm_size: 1gb`
+and bump if you have many cameras at high resolution — don't over-allocate,
+the host will swap.
 
-**Self-signed certificates** (`SELFSIGNED=1`):
-- Automatically generated on first run
-- Suitable for testing and internal use
+### Volumes
 
-**Custom SSL certificates** (`SELFSIGNED=0`):
-- Mount your certificates to `/sslcert/live` and `/sslcert/archive`
-- Compatible with Let's Encrypt certificates from SWAG
+| Path                        | What's inside                          |
+|-----------------------------|----------------------------------------|
+| `/config`                   | MariaDB data dir + `msmtprc`           |
+| `/var/cache/zoneminder`     | Events, images, temp                   |
+| `/sslcert`                  | Mount your Let's Encrypt live/archive  |
 
-### SWAG Integration Example
+### Custom SSL (e.g. SWAG / Let's Encrypt)
+
+Set `SELFSIGNED=0` and mount certs:
 
 ```yaml
-version: '3.8'
-services:
-  zoneminder:
-    image: nardo86/zoneminder
-    container_name: zoneminder
-    ports:
-      - "443:443"
-    environment:
-      - TZ=Europe/Rome
-      - SELFSIGNED=0
-      - FQDN=your.domain.com
-    volumes:
-      - /mystorage/ZoneMinder/config:/config
-      - /mystorage/ZoneMinder/zmcache:/var/cache/zoneminder
-      - /mystorage/Swag/etc/letsencrypt/live:/sslcert/live
-      - /mystorage/Swag/etc/letsencrypt/archive:/sslcert/archive
-    shm_size: '1gb'
-    restart: unless-stopped
+volumes:
+  - /path/to/swag/etc/letsencrypt/live:/sslcert/live
+  - /path/to/swag/etc/letsencrypt/archive:/sslcert/archive
 ```
 
-### Memory Configuration
+Apache reads `/sslcert/live/$FQDN/fullchain.pem` and `privkey.pem`.
 
-The `shm-size` parameter allocates shared memory for ZoneMinder:
-- Size depends on number of cameras and recording settings
-- Start with 1GB and adjust based on performance
-- **Warning**: Don't over-allocate as it may cause system instability
+### Email (msmtp)
 
-### Access
+A template config is written to `/config/msmtprc` on first run. Edit it with
+your SMTP credentials and restart the container.
 
-Once running, access ZoneMinder at: `https://your.fqdn:443/zm`
+## Upgrading from 1.36 → 1.38
 
-## Migration & Troubleshooting
+ZoneMinder 1.38 introduces major changes (RBAC, monitor Function field split
+into `Capturing`/`Analysing`/`Recording`, new tables). Database migrations
+run automatically via `zmupdate.pl` on container start when a version
+mismatch is detected.
 
-### Data Migration
+**Back up `/config/mysql` before the first start on 1.38** — the migration is
+one-way. See the [upstream 1.38.0 release notes](https://github.com/ZoneMinder/zoneminder/releases/tag/1.38.0)
+for details.
 
-To transfer data from another ZoneMinder instance ([reference](https://forums.zoneminder.com/viewtopic.php?t=17071)):
+## Migrating data from another instance
 
-1. **Backup database** on old system:
-   ```bash
-   mysqldump -p zm > /config/zm-dbbackup.sql
-   ```
+[Reference thread](https://forums.zoneminder.com/viewtopic.php?t=17071).
 
-2. **Restore database** on new system:
-   ```bash
-   mysql -p zm < /config/zm-dbbackup.sql
-   ```
+```bash
+# On the old system
+mysqldump -p zm > zm-dbbackup.sql
 
-3. **Sync recordings**:
-   ```bash
-   rsync -r -t -p -o -g -v --progress --delete user@oldSystem:/var/cache/zoneminder/* /var/cache/zoneminder/
-   ```
+# On the new system, after first container start
+docker exec -i zoneminder mysql -u root zm < zm-dbbackup.sql
+rsync -avP --delete /path/to/old/events/* zmcache/events/
+docker exec zoneminder zmaudit.pl
+```
 
-4. **Cleanup and audit**:
-   ```bash
-   zmaudit.pl
-   ```
+## Troubleshooting
 
-### Common Issues
+- **Container stuck "Waiting for MariaDB startup..."**: open a shell with
+  `docker exec -it zoneminder bash` and run
+  `/usr/bin/mysqld_safe --skip-syslog` to see the actual error.
+- **HTTPS not responding**: check `docker logs` for Apache errors and verify
+  `FQDN` matches the cert subject when using custom SSL.
+- **DB version mismatch warning**: the entrypoint will run `zmupdate.pl`
+  automatically. If it fails repeatedly, restore your backup and check the
+  ZoneMinder logs under `/var/log/zm/` inside the container.
 
-#### MySQL Startup Problems
+## Image
 
-If the container gets stuck on "Waiting mysql startup..." message:
+[hub.docker.com/r/nardo86/zoneminder](https://hub.docker.com/r/nardo86/zoneminder)
 
-1. **Access container**:
-   ```bash
-   docker exec -it zoneminder bash
-   ```
+Tags published by the workflow:
 
-2. **Manual database start** with detailed logging:
-   ```bash
-   /usr/bin/mysqld_safe --skip-syslog
-   ```
+- `latest` — last successful build from `master`
+- `zm-<version>` — the ZoneMinder version that was built
+- `YYYY.MM` — monthly cron snapshot
+- `1.34`, `amd64-1.34`, `arm32v7-1.34`, `arm64v8-1.34` — frozen 2021 images
+  on ZoneMinder 1.34, kept for users who pinned them. **Not updated.**
 
-3. **Check logs** for specific error messages to diagnose database issues
+## Notes
 
-#### Performance Issues
+- Built with help from Claude (Anthropic). Review the configuration before
+  exposing to anything beyond your LAN — defaults are convenient, not hardened.
+- Not affiliated with the ZoneMinder project. See
+  [ZoneMinder/zoneminder](https://github.com/ZoneMinder/zoneminder) for the upstream.
+- No warranty. Back up your recordings.
 
-- Monitor shared memory usage: `df -h /dev/shm`
-- Adjust `shm-size` based on camera count and recording settings
-- Check system memory usage to prevent swapping
+## Support
 
-## Security Considerations
-
-- 🔒 Use strong passwords for ZoneMinder admin account
-- 🌐 Consider using a reverse proxy with proper SSL certificates
-- 🔄 Keep container updated with security patches
-- 📋 Regularly backup your configuration and recordings
-- 🚫 Avoid exposing directly to internet without additional security layers
-
-## Contributing
-
-This is a community-maintained project. Contributions are welcome:
-
-- 🐛 **Bug Reports**: Please include container logs and system information
-- 🔧 **Pull Requests**: Test thoroughly before submitting
-- 📚 **Documentation**: Help improve this README
-- 🧪 **Testing**: Help test new versions on different architectures
-
-## ⚠️ AI Disclaimer
-
-This project was developed with the assistance of Claude AI (Anthropic). While functional, please be aware that:
-
-- **Security considerations**: The configuration may not be optimized for production environments
-- **Best practices**: Some settings might not follow enterprise-grade security standards  
-- **Testing required**: Thoroughly test in your environment before production use
-- **No warranty**: Use at your own risk - review all configurations before deployment
-- **Community input welcome**: Issues and improvements are encouraged via GitHub issues/PRs
-
-**Recommendation**: Have a security professional review the setup before production deployment.
-
-## Support & Donations
-
-This is a community project maintained on a volunteer basis. 
-
-**If this project helped you:**
-- ⭐ Star the repository on GitHub
-- 🐛 Report issues and bugs
-- 🔧 Contribute improvements
-- ☕ Feel free to consider donating if my work helped you! https://paypal.me/ErosNardi
-
-**For issues:**
-1. Check existing GitHub issues
-2. Review security considerations
-3. Test in isolated environment
-4. Provide detailed reproduction steps
-5. Be patient - this is maintained on volunteer basis
-
-## Version Information
-
-- **AMD64**: Latest ZoneMinder version (automatically updated)
-- **ARM64**: Latest ZoneMinder version (fully supported)
-- **Base Image**: Debian Bullseye Slim
-- **Web Server**: Apache2 with SSL
-- **Database**: MariaDB
-- **Mail**: msmtp (replaces deprecated ssmtp)
+⭐ Star • 🐛 Issue • 🔧 PR • ☕ <https://paypal.me/ErosNardi>
