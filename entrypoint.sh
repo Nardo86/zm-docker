@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
-trap stop SIGTERM SIGINT SIGQUIT SIGHUP ERR
+# Stop services on container shutdown signals. Don't trap ERR — it would
+# fire on any non-zero exit (including expected ones like `grep` finding
+# no match in fresh-install checks below).
+trap stop SIGTERM SIGINT SIGQUIT SIGHUP
 
 start(){
 
@@ -40,37 +43,21 @@ if [ "$RESULT" != "Tables" ]; then
 	echo "ZoneMinder database not found - performing initial setup..."
 	echo "This may take a few minutes, please wait..."
 
-	echo "Step 1/5: Initializing database..."
-	echo "USE mysql;" > timezones.sql &&  mysql_tzinfo_to_sql /usr/share/zoneinfo >> timezones.sql
-	mysql -u root < timezones.sql 2>/dev/null
-	rm timezones.sql
+	echo "Step 1/3: Loading timezone tables..."
+	mysql_tzinfo_to_sql /usr/share/zoneinfo 2>/dev/null | mysql -u root mysql
 
-	echo "Step 2/5: Creating ZoneMinder database..."
-	mysql -u root < /usr/share/zoneminder/db/zm_create.sql 2>/dev/null
-	mysql -u root -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';" 2>/dev/null
-	mysqladmin -u root reload 2>/dev/null
+	echo "Step 2/3: Creating ZoneMinder schema..."
+	mysql -u root < /usr/share/zoneminder/db/zm_create.sql
+	mysql -u root -e "grant all on zm.* to 'zmuser'@localhost identified by 'zmpass';"
+	mysqladmin -u root reload
 
-	echo "Step 3/5: Securing MariaDB installation..."
-	secret=$(openssl rand -base64 14)
-	mysql_secure_installation <<EOF >/dev/null 2>&1
+	# Note: no mysql_secure_installation. MariaDB 10.11 (bookworm) changed
+	# the interactive prompts and the old heredoc would misalign. The DB
+	# is only reachable from inside the container (no 3306 published), so
+	# leaving the root user passwordless on the unix socket is acceptable
+	# for this single-purpose appliance.
 
-y
-$secret
-$secret
-y
-y
-y
-y
-EOF
-
-	echo "Step 4/5: Restarting MariaDB..."
-	/etc/init.d/mariadb restart >/dev/null 2>&1
-	while ! mysqladmin ping --silent; do
-		echo "Waiting for MariaDB restart..."
-		sleep 3
-	done
-
-	echo "Step 5/5: Finalizing database setup..."
+	echo "Step 3/3: Finalizing database setup..."
 	echo "ZoneMinder database configuration completed successfully!"
 
 else
