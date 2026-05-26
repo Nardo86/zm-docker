@@ -145,6 +145,31 @@ jobs:
           done <<< "${{ steps.tags.outputs.tags }}"
           docker buildx imagetools create "${TAG_ARGS[@]}" $SOURCES
 
+      - name: Delete per-arch build tags from Docker Hub
+        # The per-arch images already exist inside the manifest by digest;
+        # the build-amd64 / build-arm64 tags are only needed during this
+        # workflow and would otherwise show up as user-visible tags forever.
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          set -eu
+          JWT=$(curl -fsSL -X POST https://hub.docker.com/v2/users/login/ \
+              -H 'Content-Type: application/json' \
+              -d "{\"username\":\"${DOCKER_HUB_USERNAME}\",\"password\":\"${DOCKER_HUB_TOKEN}\"}" \
+              | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
+          for tag in build-amd64 build-arm64; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE \
+                -H "Authorization: JWT ${JWT}" \
+                "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${tag}/")
+            echo "DELETE ${tag} -> HTTP ${code}"
+            # 204 = success, 404 = already gone (also fine)
+            case "$code" in
+              204|404) ;;
+              *) echo "Unexpected response, failing"; exit 1 ;;
+            esac
+          done
+
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
         uses: peter-evans/dockerhub-description@v4
