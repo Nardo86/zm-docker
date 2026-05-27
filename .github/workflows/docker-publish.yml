@@ -30,6 +30,11 @@ jobs:
     steps:
       - name: Resolve ZoneMinder version
         id: resolve
+        env:
+          # The default GITHUB_TOKEN is enough to lift us from the 60 req/h
+          # unauthenticated rate limit (which is what made the previous run
+          # silently fall back to ZM_FALLBACK_VERSION the day 1.38.2 dropped).
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -eux
           INPUT_VERSION="${{ github.event.inputs.zm_version }}"
@@ -38,7 +43,11 @@ jobs:
             VERSION="$INPUT_VERSION"
           else
             echo "Fetching latest ZoneMinder release from GitHub API"
-            VERSION=$(curl -fsSL https://api.github.com/repos/ZoneMinder/zoneminder/releases/latest | jq -r '.tag_name' || true)
+            VERSION=$(curl -fsSL \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                https://api.github.com/repos/ZoneMinder/zoneminder/releases/latest \
+                | jq -r '.tag_name' || true)
             if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
               echo "API lookup failed, using fallback ${ZM_FALLBACK_VERSION}"
               VERSION="${ZM_FALLBACK_VERSION}"
