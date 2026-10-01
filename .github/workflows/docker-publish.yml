@@ -187,3 +187,17 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           repository: ${{ env.IMAGE_NAME }}
           readme-filepath: ./README.md
+
+  # GitHub disables scheduled workflows after 60 days without repo activity,
+  # and scheduled runs don't count. Re-enabling via the API on every scheduled
+  # run resets that timer (same approach as liskin/gh-workflow-keepalive).
+  workflow-keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/docker-publish.yml/enable"
